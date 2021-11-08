@@ -1,0 +1,21 @@
+{
+    "StatsBomb":{
+        "competitions_path": "/home/voodoo/Documents/FootballAnalytics/StatsBomb/data/competitions.json",
+        "events_path": "/home/voodoo/Documents/FootballAnalytics/StatsBomb/data/events/",
+        "lineups_path": "/home/voodoo/Documents/FootballAnalytics/StatsBomb/data/lineups/",
+        "matches_path": "/home/voodoo/Documents/FootballAnalytics/StatsBomb/data/matches/"
+    },
+    "pitch_measurements":{
+        "unit" : "metric",
+        "width" : 68,
+        "length" : 105
+    },
+    "pitch_graphics" : {
+        "x_padding" : 25,
+        "y_padding" : 25,
+        "n_stripes" : 20,
+        "dark_color" : "#00cc00",
+        "light_color" : "#66ff66",
+        "background_color" : "#66ff66"
+    }
+}
