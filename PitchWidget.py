@@ -50,12 +50,28 @@ PITCH_DIMENSIONS = { 'metric' : {
 }
 
 def getCircleRect(radius,midpoint):
+    """Return a QRect corresponding to a circle at midpoint with radius.
+
+    Args:
+        radius (int): The radius of the circle in pixels
+        midpoint (int): The midpoint of the circle in pixels
+
+    Returns:
+        (QRect): The rectangle corresponding to the circle
+    """
     return QRect(int(midpoint[0]-radius),int(midpoint[1]-radius),
                  int(2*radius),int(2*radius))
 
 class PitchWidget(QWidget):
-
+    """A widget representing a football pitch, with a painter for drawing."""
     def __init__(self,config,parent = None):
+        """Construct a PitchWidget for representing the pitch
+
+        Args:
+            config (dict): A configuration dictionary
+            parent (PyQt5.QWidgets.QWidget, optional): Parent widget. 
+            Defaults to None.
+        """
         super().__init__(parent)
         
         self.setGeometry(config["x_origin"],config["y_origin"],
@@ -86,6 +102,14 @@ class PitchWidget(QWidget):
         return self._length
     @length.setter
     def length(self, value):
+        """Set the length of the football pitch.
+
+        Args:
+            value (float): Length of the pitch
+
+        Raises:
+            ValueError: If length is not allowed in the current units
+        """
         # check if pitch dimensions are correct
         if(value < PITCH_DIMENSION_LIMITS[self.unit]['MIN_LENGTH'] or        
                 value > PITCH_DIMENSION_LIMITS[self.unit]['MAX_LENGTH']):
@@ -97,7 +121,7 @@ class PitchWidget(QWidget):
                     between 100yd and 130yd.")
         self._length = value
 
-        # A name error will occur when the class is initialized.
+        # An AttributeError will occur when the class is initialized.
         try:
             self.calculateRelativePitchDimensions()
         except AttributeError:
@@ -109,6 +133,15 @@ class PitchWidget(QWidget):
         return self._width
     @width.setter
     def width(self, value):
+        """Set the width of the football pitch.
+
+        Args:
+            value (float): Width of the pitch
+
+        Raises:
+            ValueError: If width is not allowed in the current units.
+        """
+        # check if pitch dimensions are correct
         if(value < PITCH_DIMENSION_LIMITS[self.unit]['MIN_WIDTH'] or 
                 value > PITCH_DIMENSION_LIMITS[self.unit]['MAX_WIDTH']):
             if value == 'metric':
@@ -131,6 +164,14 @@ class PitchWidget(QWidget):
         return self._unit
     @unit.setter
     def unit(self, value):
+        """ Sets the system of units used specify the pitch dimensions.
+
+        Args:
+            value (str): Name of unit.
+
+        Raises:
+            ValueError: If unit is not \'metric\' or \'imperial\'.
+        """
         if not value == 'metric' and not value == 'imperial':
             raise ValueError("Mode must be \'imperial\' or \'metric\'.")
         self._unit = value
@@ -141,16 +182,32 @@ class PitchWidget(QWidget):
         return self._stripes
     @stripes.setter
     def stripes(self, value):
+        """Sets the number of stripes on the field.
+
+        Args:
+            value (int): Number of stripes on the field.
+
+        Raises:
+            ValueError: If number of stripes is negative.
+        """
         if value < 0:
             raise ValueError("Number of stripes must not be negative")
         self._stripes = value
 
     @property
     def x_pad(self):
-        """The minimum horizontal padding."""
+        """The minimal horizontal padding."""
         return self._x_pad
     @x_pad.setter
     def x_pad(self, value):
+        """Sets the minimal horizontal padding
+
+        Args:
+            value (int): The minimal horizontal padding.
+
+        Raises:
+            ValueError: If padding is negative
+        """
         if value < 0:
             raise ValueError("Horizontal padding must not be negative")
         self._x_pad = value
@@ -161,8 +218,16 @@ class PitchWidget(QWidget):
         return self._y_pad
     @y_pad.setter
     def y_pad(self, value):
+        """Sets the minimal vertical padding.
+
+        Args:
+            value (int): The minimal vertical padding.
+
+        Raises:
+            ValueError: If padding is negative.
+        """
         if value < 0:
-            raise ValueError("Vertical padding must not be negative")
+            raise ValueError("Vertical padding must not be negative.")
         self._y_pad = value
 
     @property
@@ -218,30 +283,46 @@ class PitchWidget(QWidget):
         self._odd_stripe_color = value
 
     def paintEvent(self, event):
+        """Overloaded function for painting the widget.
+
+        Args:
+            event (QtGui.QPaintEvent): A paint event.
+
+        Returns:
+            [type]: [description]
+        """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         self.drawPitch(painter)
         if self.showPasses:
-            painter.setPen((self.marking_pen))
-            painter.setBrush(QBrush(Qt.NoBrush))
-            drawArrow(painter,0,0,120,120,10)
+            painter.drawText(0,0,75,50,0,"Passes")
+            #TODO: Implement passes
+        if self.showShots:
+            painter.drawText(100,100,75,50,0,"Shots")
+            #TODO: Implement shots
+        if self.showHeatmap:
+            painter.drawText(200,200,75,100,0,"Heatmap")
+            #TODO: Implement heatmap
         painter.end()
         return super().paintEvent(event)
 
     def drawPitch(self,painter):
-
+        """ Draw a football pitch using a painter."""
+        #calculate the absolute measurements in pixels
         f, p = self.calculatePadding()
         abs_meas = { k : v*f for k,v in self.rel_dim.items()}
 
+        # make sure penalty spot is visible
         if abs_meas["PENALTY_SPOT_RADIUS"] < 1:
             abs_meas["PENALTY_SPOT_RADIUS"] = 1
 
-        
+        # draw offside stripes
         self.drawStripes(p,abs_meas,painter)
 
         painter.setPen((self.marking_pen))
         painter.setBrush(QBrush(Qt.NoBrush))
 
+        # draw field markings
         self.drawRects(p,abs_meas,painter)
         self.drawArcs(p,abs_meas,painter)
         self.drawLines(p,abs_meas,painter)
@@ -408,6 +489,7 @@ class PitchWidget(QWidget):
         return f, (xp,yp)
 
     def calculateRelativePitchDimensions(self):
+        """Calculate the relative dimensions of pitch measurements."""
         x = self.length+2*PITCH_DIMENSIONS[self.unit]["GOAL_DEPTH"]
         self.rel_dim = { k : v/x for 
                     k,v in PITCH_DIMENSIONS[self.unit].items()}

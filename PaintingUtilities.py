@@ -5,7 +5,7 @@ from PyQt5.QtGui import QPolygon
 from PyQt5.QtCore import QLine, QPoint
 from math import atan2, pi, sin, cos
 
-def drawArrow(painter,x0,y0,x1,y1,arrowsize,tip_angle = None):
+def drawArrow(painter,x0,y0,x1,y1,arrowsize,tip_angle = pi/3):
     """Draws an arrow using the painter.
 
     Args:
@@ -14,8 +14,8 @@ def drawArrow(painter,x0,y0,x1,y1,arrowsize,tip_angle = None):
         y0 (int): y-coordinate of the start point.
         x1 (int): x-coordinate of the end point.
         y1 (int): y-coordinate of the end point
-        arrowsize (int): size of the arrow head
-        tip_angle (float, optional): [description]. Defaults to pi/3.
+        arrowsize (int): size of the arrow head in pixels.
+        tip_angle (float, optional): Angle of the arrow head. Defaults to pi/3.
     """
     tip_angle = pi/3 if not tip_angle else tip_angle
     line = QLine(x0,y0,x1,y1)
