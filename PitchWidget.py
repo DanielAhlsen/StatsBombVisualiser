@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QBrush, QPalette, QPen, QPainter, QColor
 from PyQt5.QtCore import QRect, QLine, Qt
+from PaintingUtilities import drawArrow
 
 PITCH_DIMENSION_LIMITS = { 
     'metric' : {
@@ -54,27 +55,30 @@ def getCircleRect(radius,midpoint):
 
 class PitchWidget(QWidget):
 
-    def __init__(self, x_origin, y_origin, x_len, y_len, pitch_length, 
-                 pitch_width, unit, marking_color, marking_width, 
-                 background_color, stripe_color1, stripe_color2, n_stripes, 
-                 x_pad, y_pad, parent = None):
+    def __init__(self,config,parent = None):
         super().__init__(parent)
         
-        self.setGeometry(x_origin,y_origin,x_len,y_len)
-        self.unit = unit
-        self.length = pitch_length
-        self.width = pitch_width
-        self.n_stripes = n_stripes
-        self.x_pad = x_pad
-        self.y_pad = y_pad
+        self.setGeometry(config["x_origin"],config["y_origin"],
+                         config["window_width"],config["window_height"])
+
+        self.unit = config["unit"]
+        self.length = config["pitch_length"]
+        self.width = config["pitch_width"]
+        self.n_stripes = config["n_stripes"]
+        self.x_pad = config["x_padding"]
+        self.y_pad = config["y_padding"]
 
         self.marking_pen = QPen()
-        self.marking_color = QColor(marking_color)
-        self.marking_width = marking_width
-        self.background_color = QColor(background_color)
+        self.marking_color = QColor(config["marking_color"])
+        self.marking_width = config["marking_width"]
+        self.background_color = QColor(config["background_color"])
 
-        self.even_stripe_color = QColor(stripe_color1)
-        self.odd_stripe_color = QColor(stripe_color2)
+        self.even_stripe_color = QColor(config["light_color"])
+        self.odd_stripe_color = QColor(config["dark_color"])
+
+        self.showPasses = config["show_passes"]
+        self.showShots = config["show_shots"]
+        self.showHeatmap = config["show_heatmap"]
 
     @property
     def length(self):
@@ -214,10 +218,17 @@ class PitchWidget(QWidget):
         self._odd_stripe_color = value
 
     def paintEvent(self, event):
-        self.drawPitch()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        self.drawPitch(painter)
+        if self.showPasses:
+            painter.setPen((self.marking_pen))
+            painter.setBrush(QBrush(Qt.NoBrush))
+            drawArrow(painter,0,0,120,120,10)
+        painter.end()
         return super().paintEvent(event)
 
-    def drawPitch(self):
+    def drawPitch(self,painter):
 
         f, p = self.calculatePadding()
         abs_meas = { k : v*f for k,v in self.rel_dim.items()}
@@ -225,9 +236,7 @@ class PitchWidget(QWidget):
         if abs_meas["PENALTY_SPOT_RADIUS"] < 1:
             abs_meas["PENALTY_SPOT_RADIUS"] = 1
 
-        painter = QPainter(self)
-
-        painter.setPen(Qt.NoPen)
+        
         self.drawStripes(p,abs_meas,painter)
 
         painter.setPen((self.marking_pen))
@@ -236,8 +245,6 @@ class PitchWidget(QWidget):
         self.drawRects(p,abs_meas,painter)
         self.drawArcs(p,abs_meas,painter)
         self.drawLines(p,abs_meas,painter)
-
-        painter.end()
 
     def drawStripes(self,p,abs_meas,painter):
         """ Draws the stripes on the field
@@ -249,6 +256,7 @@ class PitchWidget(QWidget):
             painter ([type]): [description]
         """
         # Calculate offside stripes on the fields
+
         length = int(abs_meas["PITCH_LENGTH"])
         height = int(abs_meas["PITCH_WIDTH"])
         r = length%self.n_stripes
@@ -265,6 +273,8 @@ class PitchWidget(QWidget):
             widths.append(s)
 
         # Draw stripes
+        painter.setPen(Qt.NoPen)
+
         for i in range(self.n_stripes):
             if i % 2 == 0:
                 painter.setBrush(QBrush(self.even_stripe_color))
@@ -366,6 +376,12 @@ class PitchWidget(QWidget):
                              p[1],
                              p[0]+int(abs_meas["PITCH_LENGTH"]/2),
                              p[1]+int(abs_meas["PITCH_WIDTH"])))
+    
+    def drawPasses(self,p,abs_meas,painter):
+        pass
+
+    def drawShots(self,p,abs_meas,painter):
+        pass
 
     def calculatePadding(self):
         """Calculate the scaling factor and padding for rendering the pitch.
@@ -388,6 +404,7 @@ class PitchWidget(QWidget):
             f = (frame_width-2*xp)/rel_length
             yp = int((frame_height-rel_width*f)/2)
 
+        #gd = int(f*self.rel_dim["GOAL_DEPTH"])
         return f, (xp,yp)
 
     def calculateRelativePitchDimensions(self):
